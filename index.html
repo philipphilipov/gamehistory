@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Викторина на тема генерали</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Old+Standard+TT&display=swap" rel="stylesheet">
+<link rel="icon" href="икона-Photoroom.ico" type="image/png">
+<style>
+body{
+  font-family:"Old Standard TT",serif;
+  background-color:#ebdca5;
+  margin:0;
+  color:#1a1a1a;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  overflow:hidden;
+  perspective:3000px;
+} 
+
+#container{
+  width:95vw;
+  height:95vh;
+  background:#ebdca5;
+  padding:50px 50px 20px 50px;
+  border:1px solid #333;
+  position:relative;
+  overflow:auto;
+  transform-origin:left center;
+  transform-style:preserve-3d;
+  backface-visibility:hidden;
+}
+
+.page-flip{
+  animation:flipPage 1.2s cubic-bezier(.45,.05,.55,.95);
+}
+
+@keyframes flipPage{
+  0%{
+transform:rotateY(0deg);
+box-shadow:0 0 0 rgba(0,0,0,0);
+}
+
+25%{
+transform:rotateY(-30deg);
+box-shadow:-40px 0 40px rgba(0,0,0,0.25);
+}
+
+50%{
+transform:rotateY(-95deg);
+box-shadow:-80px 0 80px rgba(0,0,0,0.4);
+}
+
+75%{
+transform:rotateY(-40deg);
+box-shadow:-40px 0 40px rgba(0,0,0,0.25);
+}
+
+100%{
+transform:rotateY(0deg);
+box-shadow:0 0 0 rgba(0,0,0,0);
+}
+}
+
+.header-box{
+  border-bottom:6px double #333;
+  margin-bottom:40px;
+  padding-bottom:15px;
+  text-align:center;
+}
+
+.newspaper-date{
+  text-transform:uppercase;
+  font-size:16px;
+  font-weight:bold;
+  display:flex;
+  justify-content:space-between;
+  border-bottom:2px solid #333;
+  padding-bottom:5px;
+  margin-bottom:20px;
+}
+
+h1{
+  font-family:"UnifrakturCook",serif;
+  font-size:80px;
+  margin:0;
+  letter-spacing:3px;
+}
+
+.start-btn{
+  display:block;
+  width:100%;
+  max-width:600px;
+  margin:40px auto;
+  background:#1a1a1a;
+  color:#f4f1e6;
+  border:3px solid #1a1a1a;
+  padding:25px;
+  font-size:36px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.ans-btn{
+  display:block;
+  width:100%;
+  background:none;
+  border:1px solid #333;
+  padding:18px;
+  margin:12px 0;
+  font-size:24px;
+  font-weight:bold;
+  cursor:pointer;
+  text-align:left;
+  transition:.3s;
+}
+
+.ans-btn:hover:not(.correct):not(.wrong){
+  background:#1a1a1a;
+  color:#f4f1e6;
+}
+
+.correct{
+  background:#2ecc71;
+  color:white;
+}
+
+.wrong{
+  background:#e74c3c;
+  color:white;
+}
+
+.ans-btn:disabled{
+  cursor:default;
+}
+
+#map{
+  height:500px;
+  width:100%;
+  border:2px solid #333;
+  filter:grayscale(100%) contrast(110%) sepia(50%);
+  margin-top:20px;
+}
+
+.hidden{
+  display:none;
+}
+
+.final-score{
+  font-size:240px;
+font-weight:900;
+color:#d4af37;
+text-shadow:
+2px 2px 0 #b8960a,
+4px 4px 0 #a17f00,
+6px 6px 8px rgba(0,0,0,0.5);
+display:block;
+margin-top:30px;
+}
+
+#progress{
+  font-size:25px;
+  margin-top:20px;
+}
+
+#quiz, #mapQuestion, #result{
+  padding-top:100px;
+}
+
+.hide-header .header-box{
+  display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div id="container">
+
+<div class="header-box">
+  <div class="newspaper-date">
+    <span>Брой I, Година 1927</span>
+    <span>Цена: 1 лев</span>
+  </div>
+
+  <h1>ЛИЧНОСТИТЕ НА БЪЛГАРИЯ</h1>
+
+  <p style="margin-top:10px;font-size:33px;font-style:italic;">
+    „Истината и само истината гради историята!“
+  </p>
+</div>
+
+<div id="start">
+  <h2 style="font-size:42px;text-align:center;">
+    Научете повече за личностите, които са градили България!
+  </h2>
+
+  <button class="start-btn" onclick="triggerFlip('start','quiz',startQuiz)">
+    ЗАПОЧНИ
+  </button>
+</div>
+
+<div id="quiz" class="hidden">
+  <h2 id="question" style="font-size:32px;border-bottom:1px solid #333;padding-bottom:15px;"></h2>
+  <div id="progress"></div>
+  <div id="answers"></div>
+</div>
+
+<div id="mapQuestion" class="hidden">
+  <h2 style="font-size:28px;">
+    Посочете родното място на Александър Стамболийски
+  </h2>
+  <div id="map"></div>
+</div>
+
+<div id="result" class="hidden" style="text-align:center; position:relative; padding-top:100px;">
+
+  <p style="font-size:60px; margin-bottom:30px;font-weight: bold;">
+    Вашия резултат е:
+  </p>
+
+  <!-- Анимиран 3D златен резултат -->
+  <span class="final-score animated-gold" id="finalScoreVal">
+    0/14
+  </span>
+
+</div>
+
+<style>
+.animated-gold {
+  font-size:250px;
+  font-weight:900;
+  color:#ffd700;
+  display:block;
+  margin:0 auto 40px auto;
+  text-shadow:
+    2px 2px 0px #b8860b,
+    4px 4px 0px rgba(184,134,11,0.5),
+    6px 6px 0px rgba(0,0,0,0.3);
+  animation: goldPulse 1.5s infinite alternate, goldGlow 2s infinite alternate;
+}
+
+/* Лека анимация на изскачане */
+@keyframes goldPulse {
+  0% { transform: scale(1) rotateX(0deg); }
+  50% { transform: scale(1.05) rotateX(5deg); }
+  100% { transform: scale(1) rotateX(0deg); }
+}
+
+/* Лека светлина/блясък по текста */
+@keyframes goldGlow {
+  0% { text-shadow: 
+        2px 2px 0px #b8860b,
+        4px 4px 0px rgba(184,134,11,0.5),
+        6px 6px 0px rgba(0,0,0,0.3); }
+  50% { text-shadow: 
+        2px 2px 2px #b8860b,
+        4px 4px 4px rgba(184,134,11,0.7),
+        6px 6px 6px rgba(0,0,0,0.5); }
+  100% { text-shadow: 
+        2px 2px 0px #b8860b,
+        4px 4px 0px rgba(184,134,11,0.5),
+        6px 6px 0px rgba(0,0,0,0.3); }
+}
+</style>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+let currentQuestion=0;
+let score=0;
+let map;
+const correctLat=42.32324;
+const correctLng=24.034960;
+
+const questions = [
+
+{
+q:"Кой български генерал подготвя армията за Балканските войни?",
+a:[
+"Михаил Савов",
+"Иван Колев",
+"Стефан Тошев",
+"Рачо Петров"
+],
+correct:0
+},
+
+{
+q:"Кой български генерал е известен с бързите си кавалерийски атаки и ефективната защита на Добруджа по време на Първата световна война?",
+a:[
+"Иван Колев",
+"Стефан Тошев",
+"Михаил Савов",
+"Рачо Петров"
+],
+correct:0
+},
+
+{
+q:"Кой подписва Ньойския мирен договор и полага усилия за решаване на проблеми, свързани с осигуряване на прехрана на населението и снабдяването с жилища за крайно нуждаещите се?",
+a:[
+"Александър Стамболийски",
+"Рачо Петров",
+"Стефан Тошев",
+"Иван Колев"
+],
+correct:0
+},
+
+{
+q:"Коя личност е военен лидер и премиер, известен с модернизацията на армията и участието си във войни?",
+a:[
+"Рачо Петров",
+"Александър Стамболийски",
+"Стефан Тошев",
+"Иван Колев"
+],
+correct:0
+},
+{
+q:"По време на коя война Михаил Савов въвежда стратегическо планиране и модернизира армията?",
+a:[
+"Балканската война",
+"Първата световна война",
+"Руско-турската война",
+"Втората световна война"
+],
+correct:0
+},
+{
+q:"През коя година Иван Колев извършва бързи кавалерийски атаки и защитава Добруджа по време на Първата световна война?",
+a:[
+"1916",
+"1912",
+"1919",
+"1923"
+],
+correct:0
+},
+{
+q:"Кой се записва доброволец в Българското опълчение и е назначен като преводач в 8-а дружина поради това, че владее добре руски език?",
+a:[
+"Стефан Тошев",
+"Иван Колев",
+"Рачо Петров",
+"Михаил Савов"
+],
+correct:0
+},
+{
+q:"Кой съвременен проблем би решил най-успешно Александър Стамболийски, който модернизира селското управление и въвежда аграрна политика?",
+a:[
+"аграрната монополизация и земеделския дисбаланс",
+"Модернизация на армията",
+"Кризисно управление на държава",
+"Военно стратегическо планиране"
+],
+correct:0
+},
+{
+q:"Кога са двата мандата на Рачо Петров като министър-председател?",
+a:[
+"1901, 1903-1906",
+"1901,1909",
+"1902,1910",
+"1901-1906"
+],
+correct:0
+},
+{
+q:"Кои са трите основни приноса на Рачо Петров в армията и държавата?",
+a:[
+"Участие във войни, премиерство, модернизация на армията",
+"Аграрна реформа, трудова повинност, социални закони",
+"Кавалерийски атаки, защита на Добруджа, мобилна тактика",
+"Организация на армията, стратегическо планиране, участие във войни"
+],
+correct:0
+},
+{
+q:"Кой е роден в Стара Загора на 18 декември 1859 г.?",
+a:[
+"Стефан Тошев",
+"Иван Колев",
+"Рачо Петров",
+"Александър Стамболийски"
+],
+correct:0
+},
+{
+q:"Кой е военният стратег на българската армия по време на Сръбско-българската война?",
+a:[
+"Рачо Петров",
+"Иван Колев",
+"Стефан Тошев",
+"Михаил Савов"
+],
+correct:0
+},
+{
+q:"Кой написва творбата Победени без да бъдем бити?",
+a:[
+"Стефан Тошев",
+"Иван Колев",
+"Александър Стамболийски",
+"Михаил Савов"
+],
+correct:0
+},
+{
+q:"Кои творби е написал Александър Стамболийски?",
+a:[
+"Политически партии или съсловни организации?,Двете ми срещи с цар Фердинанд,Власт и безвластие",
+"Държавника,Селяните,Народният съюз и законите на хляба",
+"Земеделците,Мотиката срещу перото,Земеделският юмрук и неговите предатели",
+"Властта на мотиката, Градският паразит и селският хляб,Законът на браздата"
+],
+correct:0
+}
+];
+
+function triggerFlip(hideId,showId,callback){
+  const container=document.getElementById("container");
+  container.classList.add("page-flip");
+  setTimeout(()=>{
+    if(hideId) document.getElementById(hideId).classList.add("hidden");
+    if(showId) document.getElementById(showId).classList.remove("hidden");
+    if(callback) callback();
+  },500);
+  setTimeout(()=>{container.classList.remove("page-flip")},1000);
+}
+
+function startQuiz(){
+  document.getElementById("container").classList.add("hide-header");
+  showQuestion();
+}
+
+function showQuestion(){
+  const q=questions[currentQuestion];
+  document.getElementById("question").innerText=q.q;
+  document.getElementById("progress").innerText="Въпрос "+(currentQuestion+1)+" / 15";
+  const answersDiv=document.getElementById("answers");
+  answersDiv.innerHTML="";
+  q.a.forEach((ans,index)=>{
+    let btn=document.createElement("button");
+    btn.innerText=ans;
+    btn.className="ans-btn";
+    btn.onclick=()=>checkAnswer(btn,index);
+    answersDiv.appendChild(btn);
+  });
+}
+
+function checkAnswer(button,index){
+  const buttons=document.querySelectorAll(".ans-btn");
+  buttons.forEach(b=>b.disabled=true);
+  if(index===questions[currentQuestion].correct){
+    button.classList.add("correct");
+    score++;
+  }else{
+    button.classList.add("wrong");
+    buttons[questions[currentQuestion].correct].classList.add("correct");
+  }
+  setTimeout(()=>{
+    currentQuestion++;
+    if(currentQuestion<questions.length){
+      triggerFlip("quiz","quiz",showQuestion);
+    }else{
+      triggerFlip("quiz","mapQuestion",showMap);
+    }
+  },2000);
+}
+
+// функция за разбъркване (Fisher-Yates)
+function shuffleArray(array){
+for(let i=array.length-1;i>0;i--){
+const j=Math.floor(Math.random()*(i+1));
+[array[i],array[j]]=[array[j],array[i]];
+}
+}
+
+
+// разбъркване на въпросите
+shuffleArray(questions);
+
+
+// разбъркване на отговорите във всеки въпрос
+questions.forEach(q=>{
+const correctAnswer=q.a[q.correct];
+shuffleArray(q.a);
+q.correct=q.a.indexOf(correctAnswer);
+});
+function showMap(){
+
+  map = L.map("map").setView([42.7,25.3],7);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
+  .addTo(map);
+
+  const greenIcon = L.icon({
+    iconUrl:"https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
+    shadowUrl:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+    iconSize:[25,41],
+    iconAnchor:[12,41],
+    popupAnchor:[1,-34],
+    shadowSize:[41,41]
+  });
+
+  const redIcon = L.icon({
+    iconUrl:"https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+    shadowUrl:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+    iconSize:[25,41],
+    iconAnchor:[12,41],
+    popupAnchor:[1,-34],
+    shadowSize:[41,41]
+  });
+
+  map.on("click",function(e){
+
+    let lat = e.latlng.lat;
+    let lng = e.latlng.lng;
+
+    let distance = Math.sqrt(
+      Math.pow(lat-correctLat,2)+
+      Math.pow(lng-correctLng,2)
+    );
+
+    let correct = distance < 0.3;
+
+    if(correct){
+
+      score++;
+
+      L.marker([lat,lng],{icon:greenIcon})
+      .addTo(map)
+      .bindPopup("Правилно! мястото е село Славовица(област Пазарджик) – родното място на Александър Стамболийски.")
+      .openPopup();
+
+    }else{
+
+      L.marker([lat,lng],{icon:redIcon})
+      .addTo(map)
+      .openPopup();
+
+      L.marker([correctLat,correctLng],{icon:greenIcon})
+      .addTo(map)
+      .bindPopup("Правилното място е село Славовица, област Пазарджик. ")
+      .openPopup();
+
+    }
+
+    setTimeout(()=>{
+      triggerFlip("mapQuestion","result",showResult)
+    },7000)
+
+  });
+
+}
+
+function showResult(){
+  document.getElementById("finalScoreVal").innerText=score+"/15";
+}
+
+</script>
+</body>
+</html>

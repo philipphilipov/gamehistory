@@ -16,9 +16,10 @@ body{
   display:flex;
   justify-content:center;
   align-items:center;
-  height:100vh;
+  min-height:100vh;
   overflow:hidden;
   perspective:3000px;
+  overflow-x:hidden;
 } 
 
 #container{
@@ -32,6 +33,7 @@ body{
   transform-origin:left center;
   transform-style:preserve-3d;
   backface-visibility:hidden;
+  padding:30px 20px 15px 20px;
 }
 
 .page-flip{

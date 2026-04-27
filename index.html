@@ -22,13 +22,13 @@ body{
 } 
 
 #container{
-  width:95vw;
+  width:100vw;
   height:95vh;
   background:#ebdca5;
   padding:50px 50px 20px 50px;
   border:1px solid #333;
   position:relative;
-  overflow:auto;
+  overflow:hidden;
   transform-origin:left center;
   transform-style:preserve-3d;
   backface-visibility:hidden;
@@ -173,6 +173,21 @@ margin-top:30px;
 .hide-header .header-box{
   display:none;
 }
+
+.image-wrap{
+  width:100%;
+  height:46vh;
+  overflow:hidden;
+  margin-bottom:30px;
+  flex-shrink:0;
+}
+
+.start-image{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
 </style>
 </head>
 
@@ -201,6 +216,9 @@ margin-top:30px;
   <button class="start-btn" onclick="triggerFlip('start','quiz',startQuiz)">
     ЗАПОЧНИ
   </button>
+  <div class="image-wrap">
+  <img class="start-image" src="HistoryPeople.png" alt="image">
+  </div>
 </div>
 
 <div id="quiz" class="hidden">
@@ -349,6 +367,16 @@ a:[
 "Иван Колев",
 "Рачо Петров",
 "Михаил Савов"
+],
+correct:0
+},
+{
+q:"Кое е общото на Александър Стамболийски и Рачо Петров?",
+a:[
+"министър-председател, министър на войната и министър на вътрешните работи",
+"Генерали са",
+"Главен инспектор на граничната сигурност и митническото въздухоплаване",
+"Главен военизатор на стопанската инфраструктура, Главен аграризатор на държавния апарат"
 ],
 correct:0
 },

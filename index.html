@@ -471,7 +471,7 @@ function startQuiz(){
 function showQuestion(){
   const q=questions[currentQuestion];
   document.getElementById("question").innerText=q.q;
-  document.getElementById("progress").innerText="Въпрос "+(currentQuestion+1)+" / 15";
+  document.getElementById("progress").innerText="Въпрос "+(currentQuestion+1)+" / 16";
   const answersDiv=document.getElementById("answers");
   answersDiv.innerHTML="";
   q.a.forEach((ans,index)=>{
@@ -590,7 +590,7 @@ function showMap(){
 }
 
 function showResult(){
-  document.getElementById("finalScoreVal").innerText=score+"/15";
+  document.getElementById("finalScoreVal").innerText=score+"/16";
 }
 
 </script>
